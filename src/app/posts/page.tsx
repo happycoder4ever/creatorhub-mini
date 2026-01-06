@@ -2,36 +2,85 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { checkAccess } from "@/lib/access"; // your helper
-import NFTCard from "@/components/NFTCard"; // placeholder NFT content component
+import NFTCard from "@/components/NFTCard";
+import PostCard from "@/components/Post";
+import { checkAccess } from "@/lib/access";
+
+type Post = {
+  id: string;
+  title: string;
+  content: string;
+  isPremium: boolean;
+};
 
 export default function PostsPage() {
   const { data: session } = useSession();
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const wallet = session?.user?.name; // wallet stored as user name
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [accessMap, setAccessMap] = useState<Record<string, boolean>>({});
 
+  // Fetch posts from backend
   useEffect(() => {
-    async function fetchAccess() {
-      if (!session?.user?.name) return;
-
+    async function fetchPosts() {
       try {
-        const result = await checkAccess(session.user.name); // wallet address
-        setHasAccess(result);
+        const res = await fetch("/api/posts");
+        if (!res.ok) throw new Error("Failed to fetch posts");
+        const data: Post[] = await res.json();
+        setPosts(Array.isArray(data) ? data : []); // ensure array
       } catch (err) {
-        console.error(err);
-        setHasAccess(false);
+        console.error("Error fetching posts:", err);
+        setPosts([]);
       }
+    }
+    fetchPosts();
+  }, []);
+
+  // Check access for premium posts
+  useEffect(() => {
+    if (!wallet || posts.length === 0) return;
+
+    async function fetchAccess() {
+      const map: Record<string, boolean> = {};
+      await Promise.all(
+        posts.map(async (post) => {
+          if (!post.isPremium) {
+            map[post.id] = true;
+          } else {
+            map[post.id] = await checkAccess(wallet??"");
+          }
+        })
+      );
+      setAccessMap(map);
     }
 
     fetchAccess();
-  }, [session]);
-
-  if (!session) return <p>Please connect wallet and sign in first.</p>;
-  if (hasAccess === null) return <p>Checking access...</p>;
+  }, [wallet, posts]);
 
   return (
-    <main>
-      <h1>CreatorHub Mini — Posts</h1>
-      <NFTCard hasAccess={hasAccess} />
+    <main style={{ padding: 16 }}>
+      <h1 style={{ textAlign: "center", marginBottom: 24 }}>CreatorHub Posts</h1>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 16,
+          justifyContent: "left",
+        }}
+      >
+        {posts.map((post) =>
+          post.isPremium ? (
+            <NFTCard
+              key={post.id}
+              title={post.title}
+              content={accessMap[post.id] ? post.content : undefined}
+              hasAccess={!!accessMap[post.id]}
+            />
+          ) : (
+            <PostCard key={post.id} title={post.title} content={post.content} />
+          )
+        )}
+      </div>
     </main>
   );
 }
