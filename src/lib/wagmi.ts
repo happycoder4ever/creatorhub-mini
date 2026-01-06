@@ -1,3 +1,4 @@
+// src/lib/wagmi.ts
 import { createConfig } from "@wagmi/core";
 import { mainnet } from "@wagmi/core/chains";
 import { http } from "viem";
@@ -11,7 +12,8 @@ export const wagmiConfig = createConfig({
   transports: {
     [mainnet.id]: http(),
   },
+  // Wrap in a function AND cast to 'any' to satisfy TS
   connectors: [
-    new InjectedConnector({ chains }) as any, // TS type workaround
+    () => new InjectedConnector({ chains }) as any,
   ],
 });

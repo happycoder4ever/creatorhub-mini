@@ -1,69 +1,37 @@
-// src/components/WalletButton.tsx
 "use client";
 
 import { useState } from "react";
-import { useAccount, useConnect, useDisconnect, useSignMessage } from "wagmi";
-import { InjectedConnector } from "@wagmi/connectors/injected";
-import { signIn } from "next-auth/react";
-import { chains } from "@/lib/wagmi"; // make sure chains is exported from your wagmi.ts
+import { ethers } from "ethers";
 
-export default function WalletButton() {
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { signMessageAsync } = useSignMessage();
+interface WalletButtonProps {
+  onConnect: (address: string) => void;
+}
+
+export default function WalletButton({ onConnect }: WalletButtonProps) {
+  const [address, setAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSignIn() {
-    if (!address) return;
-
+  async function connectWallet() {
     setLoading(true);
-
     try {
-      // 1. Request a nonce/message from your backend
-      const res = await fetch("/api/nonce");
-      const { message } = await res.json();
+      if (!window.ethereum) throw new Error("No Ethereum wallet found");
 
-      // 2. Sign the message with the wallet
-      const signature = await signMessageAsync({ message });
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const walletAddress = await signer.getAddress();
 
-      // 3. Send signed message to NextAuth for verification
-      const loginRes = await signIn("credentials", {
-        message,
-        signature,
-        redirect: false,
-      });
-
-      if (loginRes?.error) {
-        console.error("SIWE login failed", loginRes.error);
-      }
-    } catch (err) {
-      console.error(err);
+      setAddress(walletAddress);
+      onConnect(walletAddress); // notify parent page
+    } catch (err: any) {
+      alert("Wallet connection failed: " + err.message);
     } finally {
       setLoading(false);
     }
   }
 
-  if (!isConnected) {
-    return (
-      <button
-        onClick={() =>
-          connect({ connector: new InjectedConnector({ chains }) as any })
-        }
-        disabled={loading}
-      >
-        {loading ? "Connecting..." : "Connect Wallet"}
-      </button>
-    );
-  }
-
   return (
-    <div>
-      <span>Connected: {address}</span>
-      <button onClick={handleSignIn} disabled={loading}>
-        {loading ? "Signing in..." : "Sign In"}
-      </button>
-      <button onClick={() => disconnect()}>Disconnect</button>
-    </div>
+    <button onClick={connectWallet} disabled={loading}>
+      {address ? `Connected: ${address}` : loading ? "Loading..." : "Connect Wallet"}
+    </button>
   );
 }
