@@ -1,66 +1,52 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
-export default function Home() {
+import { useAccount, useSignMessage } from "wagmi";
+import { signIn, useSession } from "next-auth/react";
+import { SiweMessage } from "siwe";
+
+export default function TestLoginPage() {
+  const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  const { data: session } = useSession();
+
+  const testLogin = async () => {
+    if (!address) {
+      alert("Connect your wallet first in MetaMask or Wagmi dev environment");
+      return;
+    }
+
+    const message = new SiweMessage({
+      domain: window.location.host,
+      address,
+      statement: "Sign in to CreatorHub",
+      uri: window.location.origin,
+      version: "1",
+      chainId: 1,
+      nonce: "123456", // we'll fix this later properly
+    }).prepareMessage();
+
+    const signature = await signMessageAsync({ message });
+
+    const res = await signIn("credentials", {
+      message,
+      signature,
+      redirect: false,
+    });
+
+    console.log(res);
+    alert(res?.error ? "Login failed: " + res.error : "Login success!");
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div>
+      <h1>Test SIWE Login</h1>
+      <button onClick={testLogin}>Login with Wallet</button>
+      {session && (
+        <div>
+          <p>Logged in as: {session.user?.name}</p>
+          <pre>{JSON.stringify(session, null, 2)}</pre>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
