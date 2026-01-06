@@ -1,14 +1,17 @@
 import { createConfig } from "@wagmi/core";
 import { mainnet } from "@wagmi/core/chains";
 import { http } from "viem";
-import { injected } from "@wagmi/connectors";
+import { InjectedConnector } from "@wagmi/connectors/injected";
+
+// Cast mainnet array to satisfy TS tuple requirement
+export const chains = [mainnet] as [typeof mainnet, ...typeof mainnet[]];
 
 export const wagmiConfig = createConfig({
-  chains: [mainnet],
+  chains,
   transports: {
     [mainnet.id]: http(),
   },
   connectors: [
-    injected(),
+    new InjectedConnector({ chains }) as any, // TS type workaround
   ],
 });
