@@ -1,33 +1,49 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useSession } from "next-auth/react";
-
-interface Props {
+import { ethers } from "ethers";
+import { SiweMessage } from "siwe";
+interface SignInButtonProps {
   address: string;
 }
 
-export default function SignInButton({ address }: Props) {
-  const { data: session } = useSession();
-
-  if (session?.user) {
-    return <div>Signed in as {session.user.name}</div>;
-  }
-
+export default function SignInButton({ address }: SignInButtonProps) {
   async function handleSignIn() {
     try {
-      const res = await signIn("credentials", {
-        redirect: false,
-        walletAddress: address,
+      if (!window.ethereum) throw new Error("No Ethereum wallet found");
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const nonceRes = await fetch("/api/auth/nonce");
+      const { nonce } = await nonceRes.json();
+
+      const siweMessage = new SiweMessage({
+        domain: window.location.host,
+        address,
+        statement: "Sign in to CreatorHub Mini",
+        uri: window.location.origin,
+        version: "1",
+        chainId: 1,
+        nonce,
       });
 
-      if (res?.error) {
-        alert("Sign in failed: " + res.error);
-      } else {
-        alert("Signed in!");
-      }
+      const message = siweMessage.prepareMessage();
+      const signature = await signer.signMessage(message);
+
+      const res = await signIn("credentials", {
+        redirect: false,
+        message,
+        signature,
+      });
+
+      if (res?.error) throw new Error(res.error);
+
+      // Redirect after login
+      window.location.href = "/posts";
     } catch (err: any) {
-      alert("Sign in error: " + err.message);
+      console.error(err);
+      alert("Sign in failed: " + err.message);
     }
   }
 
