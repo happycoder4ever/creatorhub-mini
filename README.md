@@ -20,6 +20,8 @@ A prototype Web3 content platform with Sign-In-With-Ethereum authentication and 
 
 npm install
 
+cp .env.example .env
+
 npx prisma generate  
 npx prisma migrate dev
 

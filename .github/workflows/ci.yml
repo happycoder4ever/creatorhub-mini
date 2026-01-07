@@ -1,0 +1,39 @@
+name: CI Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      # Create dummy env so Next.js + NextAuth + Prisma don't crash
+      - name: Create env file
+        run: |
+          echo "NEXTAUTH_SECRET=ci-secret" >> .env
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env
+          echo "DATABASE_URL=file:./dev.db" >> .env
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Prisma migrate
+        run: npx prisma migrate dev --name ci --skip-seed
+
+      - name: Build
+        run: npm run build
