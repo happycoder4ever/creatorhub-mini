@@ -33,7 +33,7 @@ jobs:
         run: npx prisma generate
 
       - name: Prisma migrate
-        run: npx prisma migrate dev --name ci --skip-seed
+        run: npx prisma migrate dev --name ci
 
       - name: Build
         run: npm run build
