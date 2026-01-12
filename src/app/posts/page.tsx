@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import NFTCard from "@/components/NFTCard";
 import PostCard from "@/components/Post";
 import { checkAccess } from "@/lib/access";
@@ -26,7 +26,7 @@ export default function PostsPage() {
         const res = await fetch("/api/posts");
         if (!res.ok) throw new Error("Failed to fetch posts");
         const data: Post[] = await res.json();
-        setPosts(Array.isArray(data) ? data : []); // ensure array
+        setPosts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching posts:", err);
         setPosts([]);
@@ -46,7 +46,7 @@ export default function PostsPage() {
           if (!post.isPremium) {
             map[post.id] = true;
           } else {
-            map[post.id] = await checkAccess(wallet??"");
+            map[post.id] = await checkAccess(wallet ?? "");
           }
         })
       );
@@ -58,28 +58,73 @@ export default function PostsPage() {
 
   return (
     <main style={{ padding: 16 }}>
-      <h1 style={{ textAlign: "center", marginBottom: 24 }}>CreatorHub Posts</h1>
-
+      {/* LOGIN STATUS */}
       <div
         style={{
+          marginBottom: 16,
           display: "flex",
-          flexWrap: "wrap",
-          gap: 16,
-          justifyContent: "left",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: 8,
+          border: "1px solid #ccc",
+          borderRadius: 8,
+          backgroundColor: "#f9f9f9",
         }}
       >
-        {posts.map((post) =>
-          post.isPremium ? (
-            <NFTCard
-              key={post.id}
-              title={post.title}
-              content={accessMap[post.id] ? post.content : undefined}
-              hasAccess={!!accessMap[post.id]}
-            />
-          ) : (
-            <PostCard key={post.id} title={post.title} content={post.content} />
-          )
+        {session ? (
+          <>
+            <span>
+              Logged in as: <strong>{wallet}</strong>
+            </span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              style={{ cursor: "pointer" }}
+            >
+              Sign Out
+            </button>
+          </>
+        ) : (
+          <>
+            <span>Not logged in</span>
+            <button onClick={() => signIn()} style={{ cursor: "pointer" }}>
+              Sign In
+            </button>
+          </>
         )}
+      </div>
+
+      <h1 style={{ textAlign: "center", marginBottom: 24 }}>
+        CreatorHub Posts
+      </h1>
+
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 16,
+            justifyContent: "flex-start",
+            width: "100%",
+            maxWidth: 1400,
+          }}
+        >
+          {posts.map((post) =>
+            post.isPremium ? (
+              <NFTCard
+                key={post.id}
+                title={post.title}
+                content={accessMap[post.id] ? post.content : undefined}
+                hasAccess={!!accessMap[post.id]}
+              />
+            ) : (
+              <PostCard
+                key={post.id}
+                title={post.title}
+                content={post.content}
+              />
+            )
+          )}
+        </div>
       </div>
     </main>
   );

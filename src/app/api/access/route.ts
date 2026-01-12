@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     // MOCK IMPLEMENTATION FOR NOW
     // -----------------------------
     const lastChar = wallet.toLowerCase().slice(-1);
-    const hasAccess = parseInt(lastChar, 16) % 2 !== 0;
+    const hasAccess = parseInt(lastChar, 16) % 2 === 0;
 
     return NextResponse.json({ hasAccess });
   } catch (err) {

@@ -17,14 +17,47 @@ export default function Post({ title, content }: Props) {
         padding: 16,
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
+        boxSizing: "border-box",
       }}
     >
-      <div>
-        <h3 style={{ margin: 0 }}>{title}</h3>
-        <p style={{ fontSize: 14 }}>{content}</p>
+      {/* Top block: title + content */}
+      <div style={{ flex: 1, overflow: "hidden" }}>
+        <h3
+          style={{
+            margin: 0,
+            minHeight: 40, // reserve 1–2 lines for title
+            lineHeight: "20px",
+            fontSize: 16,
+            overflow: "hidden",
+          }}
+        >
+          {title}
+        </h3>
+        <p
+          style={{
+            fontSize: 14,
+            marginTop: 8,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: "vertical",
+          }}
+        >
+          {content}
+        </p>
       </div>
-      <div style={{ fontSize: 24, color: "#4caf50" }}>🆓 Free</div>
+
+      {/* Label always fixed at bottom */}
+      <div
+        style={{
+          fontSize: 24,
+          color: "#4caf50",
+          marginTop: 8,
+        }}
+      >
+        🆓 Free
+      </div>
     </div>
   );
 }

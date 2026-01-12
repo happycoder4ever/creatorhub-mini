@@ -20,19 +20,48 @@ export default function NFTCard({ title, content, hasAccess }: Props) {
         padding: 16,
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
+        boxSizing: "border-box",
         opacity: locked ? 0.6 : 1,
       }}
     >
-      <div>
-        <h3 style={{ margin: 0 }}>{title}</h3>
-        <p style={{ fontSize: 14 }}>
+      {/* Top block: title + content */}
+      <div style={{ flex: 1, overflow: "hidden" }}>
+        <h3
+          style={{
+            margin: 0,
+            minHeight: 40,
+            lineHeight: "20px",
+            fontSize: 16,
+            overflow: "hidden",
+          }}
+        >
+          {title}
+        </h3>
+        <p
+          style={{
+            fontSize: 14,
+            marginTop: 8,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: "vertical",
+          }}
+        >
           {locked
             ? "This content is locked. NFT or subscription required."
             : content}
         </p>
       </div>
-      <div style={{ fontSize: 24 }}>
+
+      {/* Label always fixed at bottom */}
+      <div
+        style={{
+          fontSize: 24,
+          color: locked ? "#999" : "#ff9800",
+          marginTop: 8,
+        }}
+      >
         {locked ? "🔒 Locked" : "💎 Premium"}
       </div>
     </div>

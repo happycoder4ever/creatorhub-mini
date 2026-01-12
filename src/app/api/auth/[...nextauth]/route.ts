@@ -12,7 +12,10 @@ export const authOptions: NextAuthOptions = {
         signature: { label: "Signature", type: "text" },
       },
       async authorize(credentials): Promise<User | null> {
-        if (!credentials?.message || !credentials?.signature) return null;
+        if (!credentials?.message || !credentials?.signature) {
+          // Return null triggers NextAuth error redirect
+          throw new Error("Missing message or signature. Please try again.");
+        }
 
         try {
           const siwe = new SiweMessage(credentials.message);
@@ -20,7 +23,9 @@ export const authOptions: NextAuthOptions = {
             signature: credentials.signature,
           });
 
-          if (!verified.success) return null;
+          if (!verified.success) {
+            throw new Error("Wallet signature was rejected. Please sign the message to log in.");
+          }
 
           // Find or create user
           let user = await prisma.user.findUnique({
@@ -33,26 +38,29 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          // Must return object compatible with NextAuth User
           return {
             id: user.id,
             name: user.wallet,
             email: undefined,
             image: undefined,
           };
-        } catch (err) {
-          console.error(err);
-          return null;
+        } catch (err: any) {
+          console.error("Sign-in error:", err);
+          // Fallback readable message
+          const message =
+            err.message || "Failed to sign in. Please check your wallet and try again.";
+          throw new Error(message);
         }
       },
     }),
   ],
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // optional, 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/auth/signin", // show custom sign-in page
+    error: "/auth/signin",  // NextAuth sends ?error=<code> to this page
   },
   debug: true,
 };
