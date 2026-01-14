@@ -86,7 +86,10 @@ export default function PostsPage() {
         ) : (
           <>
             <span>Not logged in</span>
-            <button onClick={() => signIn()} style={{ cursor: "pointer" }}>
+            <button
+              onClick={() => signIn(undefined, { callbackUrl: "/" })}
+              style={{ cursor: "pointer" }}
+            >
               Sign In
             </button>
           </>
